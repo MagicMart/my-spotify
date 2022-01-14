@@ -6,21 +6,38 @@ import Container from '@components/Container'
 
 import styles from '@styles/Home.module.scss'
 import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
 
-export default function Home({ categories }) {
-  console.log(categories)
+export default function Home({ bearerToken }) {
+  console.log('Home render')
+  const token = useRef(bearerToken)
+  const [categories, setCategories] = useState(null)
+  useEffect(() => {
+    fetch(
+      'https://api.spotify.com/v1/browse/categories?limit=10&locale=en_gb',
+      {
+        headers: { Authorization: `Bearer ${token.current}` },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setCategories(data.categories)
+      })
+      .catch((err) => console.log(err))
+  }, [])
+  if (!categories) return null
   return (
     <Layout>
       <Head>
-        <title>Spotify Re-Wrapped</title>
-        <meta
+        <title>My Spotify</title>
+        <met
           name="description"
           content="Top artists and tracks for the last whatever period of time..."
         />
       </Head>
 
       <Container>
-        <h1 className="sr-only">Spotify Re-Wrapped</h1>
+        <h1 className="sr-only">My Spotify</h1>
 
         <h2 className={styles.heading}>Categories</h2>
 
@@ -40,7 +57,7 @@ export default function Home({ categories }) {
                       src={item.icons[0].url}
                       alt="Artist Photo"
                       layout="fill"
-                      ObjectFit="cover"
+                      objectFit="cover"
                     />
                   </div>
 
@@ -58,17 +75,9 @@ export default function Home({ categories }) {
 export async function getServerSideProps() {
   const secrets = await getSecrets()
 
-  const categoriesResponce = await fetch(
-    'https://api.spotify.com/v1/browse/categories?limit=10&locale=en_gb',
-    {
-      headers: { Authorization: `Bearer ${secrets.spotify.bearerToken}` },
-    }
-  )
-  const data = await categoriesResponce.json()
-
   return {
     props: {
-      categories: data.categories,
+      bearerToken: secrets.spotify.bearerToken,
     },
   }
 }
